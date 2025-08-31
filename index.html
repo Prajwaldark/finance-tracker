@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Tracker | Manage Debts & Loans</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #1d1d1f;
+            @apply dark:bg-gray-900 dark:text-gray-100;
+        }
+        .navbar {
+            background: rgba(251, 251, 253, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            @apply dark:bg-gray-800/80 dark:border-gray-700;
+        }
+        .card {
+            background: rgba(251, 251, 253, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 18px;
+            backdrop-filter: saturate(180%) blur(20px);
+            @apply dark:bg-gray-800/80 dark:border-gray-700;
+        }
+        .slide-in {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="navbar fixed w-full z-50">
+        <div class="max-w-6xl mx-auto px-5 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-6">
+                <i class="fas fa-wallet text-xl text-gray-900"></i>
+                <h1 class="text-lg font-semibold tracking-tight">FinanceTracker</h1>
+                <div class="hidden md:flex space-x-6">
+                    <a href="index.html" class="text-sm font-medium hover:text-gray-500">Dashboard</a>
+                    <a href="loans.html" class="text-sm font-medium hover:text-gray-500">Loans</a>
+                    <a href="debts.html" class="text-sm font-medium hover:text-gray-500">Debts</a>
+                    <a href="reports.html" class="text-sm font-medium hover:text-gray-500">Reports</a>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-moon dark:hidden"></i>
+                    <i class="fas fa-sun hidden dark:block"></i>
+                </button>
+                <button id="auth-btn" class="text-sm font-medium hover:text-gray-500 dark:hover:text-gray-300">Sign In</button>
+                <button class="md:hidden" id="mobile-menu-btn">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden bg-white dark:bg-gray-800 shadow-lg absolute right-0 mt-2 w-48 rounded-md z-10">
+        <div class="py-1">
+            <a href="index.html" class="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-gray-700">Dashboard</a>
+            <a href="loans.html" class="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-gray-700">Loans Owed</a>
+            <a href="debts.html" class="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-gray-700">Money Owed</a>
+            <a href="reports.html" class="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-gray-700">Reports</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-6">
+        <!-- Dashboard Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-16">
+            <!-- Total I Owe -->
+            <div class="card p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-gray-500">Total I Owe</p>
+                        <h2 class="text-3xl font-semibold" id="total-owed">₹0.00</h2>
+                    </div>
+                    <i class="fas fa-hand-holding-usd text-gray-500 text-xl"></i>
+                </div>
+                <div class="mt-4">
+                    <p class="text-xs text-gray-500">Across <span id="loan-count">0</span> loans</p>
+                </div>
+            </div>
+
+            <!-- Total Owed to Me -->
+            <div class="card p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Owed to Me</p>
+                        <h2 class="text-3xl font-semibold" id="total-receivable">₹0.00</h2>
+                    </div>
+                    <i class="fas fa-hand-holding-heart text-gray-500 text-xl"></i>
+                </div>
+                <div class="mt-4">
+                    <p class="text-xs text-gray-500">From <span id="debt-count">0</span> people</p>
+                </div>
+            </div>
+
+            <!-- Net Balance -->
+            <div class="card p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-gray-500">Net Balance</p>
+                        <h2 class="text-3xl font-semibold" id="net-balance">₹0.00</h2>
+                    </div>
+                    <i class="fas fa-balance-scale text-gray-500 text-xl"></i>
+                </div>
+                <div class="mt-4">
+                    <p class="text-xs" id="net-status">Balanced</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Payments -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">Upcoming Payments</h2>
+                <button class="text-purple-600 hover:text-purple-800 font-medium" id="view-all">View All</button>
+            </div>
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="upcoming-payments">
+                        <!-- Will be populated by JavaScript -->
+                        <tr>
+                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">No upcoming payments</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- AI Strategy Section -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">AI Repayment Strategy</h2>
+                <button class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition" id="generate-strategy">
+                    <i class="fas fa-magic mr-2"></i>Generate Strategy
+                </button>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                        <i class="fas fa-robot text-purple-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Optimized Repayment Plan</h3>
+                        <div class="mt-2 text-gray-600" id="ai-strategy">
+                            <p>Click "Generate Strategy" to get personalized recommendations for managing your debts and receivables.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap gap-4 mb-8">
+            <button class="px-5 py-2.5 bg-gray-900 text-white rounded-full hover:bg-gray-700 transition flex items-center text-sm font-medium" id="add-loan">
+                <i class="fas fa-plus-circle mr-2"></i> Add Loan I Owe
+            </button>
+            <button class="px-5 py-2.5 bg-gray-900 text-white rounded-full hover:bg-gray-700 transition flex items-center text-sm font-medium" id="add-debt">
+                <i class="fas fa-plus-circle mr-2"></i> Add Money Owed to Me
+            </button>
+            <button class="px-5 py-2.5 bg-gray-200 text-gray-900 rounded-full hover:bg-gray-300 transition flex items-center text-sm font-medium" id="export-data">
+                <i class="fas fa-file-export mr-2"></i> Export Data
+            </button>
+        </div>
+
+        <!-- Add Loan Modal -->
+        <div id="loan-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md slide-in">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">Add New Loan</h3>
+                        <button id="close-loan-modal" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <form id="loan-form">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2" for="loan-lender">Lender/App Name</label>
+                            <input type="text" id="loan-lender" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-gray-700 mb-2" for="loan-principal">Principal Amount ($)</label>
+                                <input type="number" id="loan-principal" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2" for="loan-emi">Monthly EMI ($)</label>
+                                <input type="number" id="loan-emi" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-gray-700 mb-2" for="loan-tenure">Tenure (months)</label>
+                                <input type="number" id="loan-tenure" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2" for="loan-due-date">Due Date</label>
+                                <input type="date" id="loan-due-date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2" for="interest-rate">Interest Rate (% per annum)</label>
+                            <input type="number" id="interest-rate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" step="0.01">
+                            <div id="monthly-rate-display" class="text-xs text-gray-500 mt-1"></div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2" for="loan-notes">Notes/Reason</label>
+                            <textarea id="loan-notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" id="cancel-loan" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">Save Loan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Debt Modal -->
+        <div id="debt-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md slide-in">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">Add Money Owed to You</h3>
+                        <button id="close-debt-modal" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <form id="debt-form">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2" for="debtor">Debtor Name</label>
+                            <input type="text" id="debtor" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-gray-700 mb-2" for="amount">Amount ($)</label>
+                                <input type="number" id="amount" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2" for="debt-due-date">Due Date</label>
+                                <input type="date" id="debt-due-date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2" for="debt-notes">Notes/Reason</label>
+                            <textarea id="debt-notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" id="cancel-debt" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Save Debt</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Modal -->
+        <div id="export-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md slide-in">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">Export Data</h3>
+                        <button id="close-export-modal" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="mb-6">
+                        <p class="text-gray-600">Choose the format you want to export your financial data:</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <button id="export-csv" class="px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center">
+                            <i class="fas fa-file-csv mr-2"></i> CSV Format
+                        </button>
+                        <button id="export-pdf" class="px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center justify-center">
+                            <i class="fas fa-file-pdf mr-2"></i> PDF Format
+                        </button>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button" id="cancel-export" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data
+        let loans = JSON.parse(localStorage.getItem('loans')) || [];
+let debts = JSON.parse(localStorage.getItem('debts')) || [];
+
+        // DOM Elements
+        const themeToggle = document.getElementById('theme-toggle');
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const authBtn = document.getElementById('auth-btn');
+        const viewAllBtn = document.getElementById('view-all');
+        const generateStrategyBtn = document.getElementById('generate-strategy');
+        const aiStrategyDiv = document.getElementById('ai-strategy');
+        const addLoanBtn = document.getElementById('add-loan');
+        const addDebtBtn = document.getElementById('add-debt');
+        const exportDataBtn = document.getElementById('export-data');
+        const loanModal = document.getElementById('loan-modal');
+        const debtModal = document.getElementById('debt-modal');
+        const exportModal = document.getElementById('export-modal');
+        const upcomingPaymentsTable = document.getElementById('upcoming-payments');
+        const totalOwedEl = document.getElementById('total-owed');
+        const totalReceivableEl = document.getElementById('total-receivable');
+        const netBalanceEl = document.getElementById('net-balance');
+        const netStatusEl = document.getElementById('net-status');
+        const loanCountEl = document.getElementById('loan-count');
+        const debtCountEl = document.getElementById('debt-count');
+
+        // Event Listeners
+        mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+        authBtn.addEventListener('click', toggleAuth);
+        viewAllBtn.addEventListener('click', viewAllPayments);
+        generateStrategyBtn.addEventListener('click', generateStrategy);
+        addLoanBtn.addEventListener('click', () => loanModal.classList.remove('hidden'));
+        addDebtBtn.addEventListener('click', () => debtModal.classList.remove('hidden'));
+        exportDataBtn.addEventListener('click', () => exportModal.classList.remove('hidden'));
+        document.getElementById('close-loan-modal').addEventListener('click', () => loanModal.classList.add('hidden'));
+        document.getElementById('close-debt-modal').addEventListener('click', () => debtModal.classList.add('hidden'));
+        document.getElementById('close-export-modal').addEventListener('click', () => exportModal.classList.add('hidden'));
+        document.getElementById('cancel-loan').addEventListener('click', () => loanModal.classList.add('hidden'));
+        document.getElementById('cancel-debt').addEventListener('click', () => debtModal.classList.add('hidden'));
+        document.getElementById('cancel-export').addEventListener('click', () => exportModal.classList.add('hidden'));
+        document.getElementById('loan-form').addEventListener('submit', addNewLoan);
+        document.getElementById('debt-form').addEventListener('submit', addNewDebt);
+        document.getElementById('export-csv').addEventListener('click', exportToCSV);
+        document.getElementById('export-pdf').addEventListener('click', exportToPDF);
+        
+        // Add event listener for interest rate calculation
+        document.getElementById('interest-rate').addEventListener('input', calculateMonthlyRate);
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for saved theme preference or use system preference
+            const storedTheme = localStorage.getItem('color-theme');
+            const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (storedTheme === 'dark' || (!storedTheme && systemDark)) {
+                document.documentElement.classList.add('dark');
+            } else if (storedTheme === 'light' || (!storedTheme && !systemDark)) {
+                document.documentElement.classList.remove('dark');
+            }
+            
+            updateThemeToggleIcon();
+            updateThemeColors();
+            
+            updateDashboard();
+            renderUpcomingPayments();
+        });
+
+        // Theme toggle handler
+        themeToggle.addEventListener('click', function() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('color-theme', isDark ? 'dark' : 'light');
+            updateThemeToggleIcon();
+            updateThemeColors();
+        });
+
+        function updateThemeToggleIcon() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const moonIcon = themeToggle.querySelector('.fa-moon');
+            const sunIcon = themeToggle.querySelector('.fa-sun');
+            
+            if (isDark) {
+                moonIcon.classList.add('hidden');
+                sunIcon.classList.remove('hidden');
+            } else {
+                moonIcon.classList.remove('hidden');
+                sunIcon.classList.add('hidden');
+            }
+        }
+
+        function updateThemeColors() {
+            const isDark = document.documentElement.classList.contains('dark');
+            
+            // Update body background
+            document.body.className = isDark ? 'bg-gray-900' : 'bg-gray-50';
+            
+            // Update card backgrounds
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                if (isDark) {
+                    card.classList.add('dark:bg-gray-800/80', 'dark:border-gray-700');
+                    card.classList.remove('bg-white');
+                } else {
+                    card.classList.remove('dark:bg-gray-800/80', 'dark:border-gray-700');
+                    card.classList.add('bg-white');
+                }
+            });
+            
+            // Update table backgrounds
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                if (isDark) {
+                    table.classList.add('dark:bg-gray-800');
+                    table.classList.remove('bg-white');
+                } else {
+                    table.classList.remove('dark:bg-gray-800');
+                    table.classList.add('bg-white');
+                }
+            });
+            
+            // Update text colors
+            const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            headings.forEach(heading => {
+                if (isDark) {
+                    heading.classList.add('dark:text-gray-100');
+                    heading.classList.remove('text-gray-800');
+                } else {
+                    heading.classList.remove('dark:text-gray-100');
+                    heading.classList.add('text-gray-800');
+                }
+            });
+            
+            // Update modal backgrounds
+            const modals = document.querySelectorAll('#loan-modal .bg-white, #debt-modal .bg-white, #export-modal .bg-white');
+            modals.forEach(modal => {
+                if (isDark) {
+                    modal.classList.remove('bg-white');
+                    modal.classList.add('bg-gray-800');
+                } else {
+                    modal.classList.remove('bg-gray-800');
+                    modal.classList.add('bg-white');
+                }
+            });
+            
+            // Update modal text colors
+            const modalTexts = document.querySelectorAll('#loan-modal h3, #debt-modal h3, #export-modal h3');
+            modalTexts.forEach(text => {
+                if (isDark) {
+                    text.classList.remove('text-gray-800');
+                    text.classList.add('text-gray-100');
+                } else {
+                    text.classList.remove('text-gray-100');
+                    text.classList.add('text-gray-800');
+                }
+            });
+            
+            // Update form labels
+            const labels = document.querySelectorAll('label');
+            labels.forEach(label => {
+                if (isDark) {
+                    label.classList.remove('text-gray-700');
+                    label.classList.add('text-gray-200');
+                } else {
+                    label.classList.remove('text-gray-200');
+                    label.classList.add('text-gray-700');
+                }
+            });
+        }
+
+        // Functions
+        function toggleMobileMenu() {
+            mobileMenu.classList.toggle('hidden');
+        }
+
+        function toggleAuth() {
+            const btnText = authBtn.textContent.trim();
+            authBtn.textContent = btnText === 'Sign In' ? 'Sign Out' : 'Sign In';
+        }
+
+        function viewAllPayments() {
+            alert('This would show all payments in a separate view in a real application.');
+        }
+
+        function updateDashboard() {
+            // Calculate totals
+            const totalOwed = loans.reduce((sum, loan) => sum + loan.principal, 0);
+            const totalReceivable = debts.reduce((sum, debt) => sum + debt.amount, 0);
+            const netBalance = totalReceivable - totalOwed;
+            
+            // Update UI
+            totalOwedEl.textContent = `₹${totalOwed.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            totalReceivableEl.textContent = `₹${totalReceivable.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            netBalanceEl.textContent = `₹${Math.abs(netBalance).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            
+            if (netBalance > 0) {
+                netStatusEl.textContent = 'You are net positive';
+                netStatusEl.className = 'text-sm text-green-500';
+            } else if (netBalance < 0) {
+                netStatusEl.textContent = 'You are net negative';
+                netStatusEl.className = 'text-sm text-red-500';
+            } else {
+                netStatusEl.textContent = 'Balanced';
+                netStatusEl.className = 'text-sm text-gray-500';
+            }
+            
+            loanCountEl.textContent = loans.length;
+            debtCountEl.textContent = debts.length;
+        }
+
+        function renderUpcomingPayments() {
+            // Combine loans and debts and sort by due date
+            const allPayments = [
+                ...loans.map(loan => ({ ...loan, type: 'loan', displayAmount: loan.emi })),
+                ...debts.map(debt => ({ ...debt, type: 'debt', displayAmount: debt.amount }))
+            ].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+            
+            upcomingPaymentsTable.innerHTML = '';
+            
+            if (allPayments.length === 0) {
+                upcomingPaymentsTable.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No upcoming payments</td></tr>';
+                return;
+            }
+            
+            // Show only the next 5 payments
+            const paymentsToShow = allPayments.slice(0, 5);
+            
+            paymentsToShow.forEach(payment => {
+                const row = document.createElement('tr');
+                const today = new Date();
+                const dueDate = new Date(payment.dueDate);
+                const isOverdue = dueDate < today && payment.status !== 'paid';
+                
+                row.className = isOverdue ? 'bg-red-50 pulse' : '';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${payment.type === 'loan' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
+                            ${payment.type === 'loan' ? 'Loan Owed' : 'Money Owed'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${payment.type === 'loan' ? payment.lender : payment.debtor}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">₹${payment.displayAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-gray-500'}">
+                            ${formatDate(payment.dueDate)} ${isOverdue ? '(Overdue)' : ''}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${payment.status === 'active' ? 'bg-blue-100 text-blue-800' : payment.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="text-purple-600 hover:text-purple-900 mr-3" onclick="editPayment('${payment.type}', ${payment.id})">Edit</button>
+                        <button class="text-red-600 hover:text-red-900" onclick="deletePayment('${payment.type}', ${payment.id})">Delete</button>
+                    </td>
+                `;
+                
+                upcomingPaymentsTable.appendChild(row);
+            });
+        }
+
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('en-US', options);
+        }
+
+        function generateStrategy() {
+            // Simulate AI API call
+            generateStrategyBtn.disabled = true;
+            generateStrategyBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+            
+            setTimeout(() => {
+                // Sort loans by interest rate (highest first)
+                const sortedLoans = [...loans].sort((a, b) => b.interestRate - a.interestRate);
+                
+                // Calculate total monthly payments
+                const totalMonthlyPayments = loans.reduce((sum, loan) => sum + loan.emi, 0);
+                
+                // Calculate total monthly income from debts (assuming they pay monthly)
+                // In a real app, this would be more sophisticated
+                const totalMonthlyIncome = debts.reduce((sum, debt) => sum + (debt.amount / 12), 0);
+                
+                let strategyHTML = `
+                    <div class="space-y-4">
+                        <div class="p-4 bg-purple-50 rounded-lg">
+                            <h4 class="font-bold text-purple-800 mb-2">Repayment Priority</h4>
+                            <ol class="list-decimal list-inside space-y-1">
+                                ${sortedLoans.map(loan => 
+                                    `<li>Pay <span class="font-semibold">${loan.lender}</span> (${loan.interestRate}% per annum) - Next payment: ₹${loan.emi} due ${formatDate(loan.dueDate)}</li>`
+                                ).join('')}
+                            </ol>
+                        </div>
+                        
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h4 class="font-bold text-blue-800 mb-2">Cash Flow Analysis</h4>
+                            <p>Your total monthly debt payments: <span class="font-semibold">₹${totalMonthlyPayments.toFixed(2)}</span></p>
+                            <p>Estimated monthly income from receivables: <span class="font-semibold">₹${totalMonthlyIncome.toFixed(2)}</span></p>
+                            <p class="mt-2 ${totalMonthlyIncome > totalMonthlyPayments ? 'text-green-600' : 'text-red-600'}">
+                                ${totalMonthlyIncome > totalMonthlyPayments ? 
+                                    'You have positive cash flow. Consider paying extra on high-interest loans.' : 
+                                    'Warning: Your monthly debt payments exceed expected income. Consider adjusting your budget.'}
+                            </p>
+                        </div>
+                        
+                        <div class="p-4 bg-yellow-50 rounded-lg">
+                            <h4 class="font-bold text-yellow-800 mb-2">Action Items</h4>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>Focus on paying off the highest interest loans first (avalanche method)</li>
+                                <li>Contact ${debts.find(d => d.status === 'overdue')?.debtor || 'your debtors'} about overdue payments</li>
+                                <li>Consider consolidating loans if possible to reduce interest rates</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                
+                aiStrategyDiv.innerHTML = strategyHTML;
+                generateStrategyBtn.disabled = false;
+                generateStrategyBtn.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate Strategy';
+            }, 1500);
+        }
+
+        function calculateInterestRate(principal, emi, tenure) {
+    let rate = 0.01;
+    for (let i = 0; i < 100; i++) {
+        let pow = Math.pow(1 + rate, tenure);
+        let f = principal * rate * pow / (pow - 1) - emi;
+        let f_prime = principal * pow * (pow - 1 - tenure * rate) / Math.pow(pow - 1, 2);
+        rate = rate - f / f_prime;
+        if (Math.abs(f) < 1e-6) break;
+    }
+    let annualRate = rate * 12 * 100;
+    return annualRate.toFixed(2);
+}
+
+        function addNewLoan(e) {
+            e.preventDefault();
+            const principal = Number(document.getElementById('loan-principal').value);
+            const emi = Number(document.getElementById('loan-emi').value);
+            const tenure = Number(document.getElementById('loan-tenure').value);
+
+            const interestRate = calculateInterestRate(principal, emi, tenure);
+
+            const newLoan = {
+                id: Date.now(),
+                lender: document.getElementById('loan-lender').value,
+                principal,
+                interestRate: Number(interestRate),
+                emi,
+                tenure,
+                dueDate: document.getElementById('loan-due-date').value,
+                notes: document.getElementById('loan-notes').value,
+                status: "active"
+            };
+
+            loans.push(newLoan);
+            localStorage.setItem('loans', JSON.stringify(loans));
+            loanModal.classList.add('hidden'); // Close modal
+            document.getElementById('loan-form').reset(); // Reset form
+            updateDashboard(); // Update summary
+            renderUpcomingPayments(); // Refresh payments table
+            showNotification('Loan added successfully!', 'success'); // Show notification
+        }
+
+        function addNewDebt(e) {
+            e.preventDefault();
+            
+            const newDebt = {
+                id: debts.length > 0 ? Math.max(...debts.map(d => d.id)) + 1 : 1,
+                debtor: document.getElementById('debtor').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                dueDate: document.getElementById('debt-due-date').value,
+                notes: document.getElementById('debt-notes').value,
+                status: 'active'
+            };
+            
+            debts.push(newDebt);
+            localStorage.setItem('debts', JSON.stringify(debts));
+            debtModal.classList.add('hidden');
+            document.getElementById('debt-form').reset();
+            updateDashboard();
+            renderUpcomingPayments();
+            
+            // Show success notification
+            showNotification('Debt added successfully!', 'success');
+        }
+
+        function exportToCSV() {
+            // In a real app, this would generate an actual CSV file
+            alert('CSV export functionality would be implemented in a real application.');
+            exportModal.classList.add('hidden');
+        }
+
+        function exportToPDF() {
+            // In a real app, this would generate an actual PDF
+            alert('PDF export functionality would be implemented in a real application.');
+            exportModal.classList.add('hidden');
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} z-50 slide-in`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Edit payment function
+        function editPayment(type, id) {
+            if (type === 'loan') {
+                const loan = loans.find(l => l.id === id);
+                if (loan) {
+                    // Use correct IDs
+                    document.getElementById('loan-lender').value = loan.lender;
+                    document.getElementById('loan-principal').value = loan.principal;
+                    document.getElementById('interest-rate').value = loan.interestRate;
+                    document.getElementById('loan-emi').value = loan.emi;
+                    document.getElementById('loan-tenure').value = loan.tenure;
+                    document.getElementById('loan-due-date').value = loan.dueDate;
+                    document.getElementById('loan-notes').value = loan.notes;
+
+                    calculateMonthlyRate();
+
+                    const form = document.getElementById('loan-form');
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    submitBtn.textContent = 'Update Loan';
+                    submitBtn.onclick = (e) => updateLoan(e, id);
+
+                    document.getElementById('loan-modal').classList.remove('hidden');
+                }
+            } else if (type === 'debt') {
+                const debt = debts.find(d => d.id === id);
+                if (debt) {
+                    // Populate the debt modal with existing data
+                    document.getElementById('debtor').value = debt.debtor;
+                    document.getElementById('amount').value = debt.amount;
+                    document.getElementById('debt-due-date').value = debt.dueDate;
+                    document.getElementById('debt-notes').value = debt.notes;
+                    
+                    // Change the form to update mode
+                    const form = document.getElementById('debt-form');
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    submitBtn.textContent = 'Update Debt';
+                    submitBtn.onclick = (e) => updateDebt(e, id);
+                    
+                    // Show the modal
+                    document.getElementById('debt-modal').classList.remove('hidden');
+                }
+            }
+        }
+
+        // Update loan function
+        function updateLoan(e, id) {
+            e.preventDefault();
+
+            const loanIndex = loans.findIndex(l => l.id === id);
+            if (loanIndex !== -1) {
+                loans[loanIndex] = {
+                    id: id,
+                    lender: document.getElementById('loan-lender').value,
+                    principal: parseFloat(document.getElementById('loan-principal').value),
+                    interestRate: parseFloat(document.getElementById('interest-rate').value),
+                    emi: parseFloat(document.getElementById('loan-emi').value),
+                    tenure: parseFloat(document.getElementById('loan-tenure').value),
+                    dueDate: document.getElementById('loan-due-date').value,
+                    notes: document.getElementById('loan-notes').value,
+                    status: 'active'
+                };
+
+                localStorage.setItem('loans', JSON.stringify(loans));
+
+                document.getElementById('loan-modal').classList.add('hidden');
+                document.getElementById('loan-form').reset();
+
+                const submitBtn = document.querySelector('#loan-form button[type="submit"]');
+                submitBtn.textContent = 'Save Loan';
+                submitBtn.onclick = addNewLoan;
+
+                updateDashboard();
+                renderUpcomingPayments();
+                showNotification('Loan updated successfully!', 'success');
+            }
+        }
+
+        // Update debt function
+        function updateDebt(e, id) {
+            e.preventDefault();
+            
+            const debtIndex = debts.findIndex(d => d.id === id);
+            if (debtIndex !== -1) {
+                debts[debtIndex] = {
+                    id: id,
+                    debtor: document.getElementById('debtor').value,
+                    amount: parseFloat(document.getElementById('amount').value),
+                    dueDate: document.getElementById('debt-due-date').value,
+                    notes: document.getElementById('debt-notes').value,
+                    status: 'active'
+                };
+                
+                localStorage.setItem('debts', JSON.stringify(debts));
+                
+                // Reset form and modal
+                document.getElementById('debt-modal').classList.add('hidden');
+                document.getElementById('debt-form').reset();
+                
+                // Reset submit button
+                const submitBtn = document.querySelector('#debt-form button[type="submit"]');
+                submitBtn.textContent = 'Save Debt';
+                submitBtn.onclick = addNewDebt;
+                
+                updateDashboard();
+                renderUpcomingPayments();
+                showNotification('Debt updated successfully!', 'success');
+            }
+        }
+
+        // Delete payment function
+        function deletePayment(type, id) {
+            if (confirm(`Are you sure you want to delete this ${type === 'loan' ? 'loan' : 'debt'}?`)) {
+                if (type === 'loan') {
+                    const loanIndex = loans.findIndex(l => l.id === id);
+                    if (loanIndex !== -1) {
+                        loans.splice(loanIndex, 1);
+                        showNotification('Loan deleted successfully!', 'success');
+                    }
+                } else if (type === 'debt') {
+                    const debtIndex = debts.findIndex(d => d.id === id);
+                    if (debtIndex !== -1) {
+                        debts.splice(debtIndex, 1);
+                        showNotification('Debt deleted successfully!', 'success');
+                    }
+                }
+                
+                updateDashboard();
+                renderUpcomingPayments();
+            }
+        }
+
+        // Calculate monthly interest rate
+        function calculateMonthlyRate() {
+            const annualRate = parseFloat(document.getElementById('interest-rate').value) || 0;
+            const monthlyRate = annualRate / 12;
+            const monthlyRateDisplay = document.getElementById('monthly-rate-display');
+            
+            if (annualRate > 0) {
+                monthlyRateDisplay.textContent = `Monthly rate: ${monthlyRate.toFixed(2)}%`;
+                monthlyRateDisplay.className = 'text-xs text-blue-600 mt-1 font-medium';
+            } else {
+                monthlyRateDisplay.textContent = 'Monthly rate: 0%';
+                monthlyRateDisplay.className = 'text-xs text-gray-500 mt-1';
+            }
+        }
+    </script>
+</body>
+</html>

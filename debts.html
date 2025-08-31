@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Debts | Finance Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <nav class="navbar w-full z-50 mb-8">
+        <div class="max-w-6xl mx-auto px-5 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-6">
+                <a href="index.html" class="text-lg font-semibold tracking-tight">FinanceTracker</a>
+                <a href="loans.html" class="font-medium">Loans</a>
+                <a href="debts.html" class="font-medium text-purple-600">Debts</a>
+                <a href="reports.html" class="font-medium">Reports</a>
+            </div>
+        </div>
+    </nav>
+    <div class="container mx-auto px-4 py-6">
+        <h1 class="text-2xl font-bold mb-6">Money Owed to Me</h1>
+        <div id="debts-list" class="bg-white rounded-lg shadow-md p-6">
+            <!-- Debts will be listed here by JS -->
+        </div>
+    </div>
+    <script>
+        // Load debts from localStorage
+        const debts = JSON.parse(localStorage.getItem('debts')) || [];
+        const debtsList = document.getElementById('debts-list');
+        if (debts.length === 0) {
+            debtsList.innerHTML = '<p class="text-gray-500">No debts found.</p>';
+        } else {
+            debtsList.innerHTML = debts.map(debt => `
+                <div class="mb-4 border-b pb-4">
+                    <div class="flex justify-between">
+                        <div>
+                            <span class="font-semibold">${debt.debtor}</span>
+                            <span class="ml-2 text-gray-500">₹${debt.amount}</span>
+                        </div>
+                        <span class="text-xs px-2 py-1 rounded bg-green-100 text-green-800">${debt.status}</span>
+                    </div>
+                    <div class="text-sm text-gray-600">Due: ${debt.dueDate}</div>
+                    <div class="text-xs text-gray-400">${debt.notes}</div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
