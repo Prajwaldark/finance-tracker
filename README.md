@@ -20,7 +20,7 @@ A beautiful, responsive web application to track your personal finances, manage 
 
 ## 🚀 Live Demo
 
-[View Live Demo](https://your-demo-link.com) *(Add your deployment link here)*
+**soon**
 
 ## 🛠️ Tech Stack
 
