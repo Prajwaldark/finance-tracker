@@ -584,11 +584,12 @@
             // Calculate totals
             const totalOwed = loans.reduce((sum, loan) => sum + loan.principal, 0);
             const totalReceivable = debts.reduce((sum, debt) => sum + debt.amount, 0);
-            const netBalance = bankBalance + totalReceivable - totalOwed;
+            // Net Balance = Money Owed to Me + Bank Balance - Money I Owe
+            const netBalance = totalReceivable + bankBalance - totalOwed;
 
-            console.log('Total Owed:', totalOwed);
             console.log('Total Receivable:', totalReceivable);
-            console.log('Net Balance (with bank):', netBalance);
+            console.log('Total Owed:', totalOwed);
+            console.log('Net Balance:', netBalance);
 
             // Update UI
             const owedText = `₹${totalOwed.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
@@ -726,7 +727,8 @@
                 const bankBalance = parseFloat(localStorage.getItem('bankBalance')) || 0;
                 const totalOwed = loans.reduce((sum, loan) => sum + loan.principal, 0);
                 const totalReceivable = debts.reduce((sum, debt) => sum + debt.amount, 0);
-                const netBalance = bankBalance + totalReceivable - totalOwed;
+                // Net Balance = Money Owed to Me + Bank Balance - Money I Owe
+                const netBalance = totalReceivable + bankBalance - totalOwed;
 
                 // Sort loans by interest rate (highest first)
                 const sortedLoans = [...loans].sort((a, b) => b.interestRate - a.interestRate);
