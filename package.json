@@ -1,0 +1,25 @@
+{
+  "name": "finance-tracker",
+  "version": "1.0.0",
+  "description": "AI-powered financial tracker with debt and income analysis",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "finance",
+    "tracker",
+    "ai",
+    "gemini"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.3",
+    "node-fetch": "^3.3.2"
+  }
+}
