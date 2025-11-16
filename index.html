@@ -850,13 +850,13 @@ User's question: ${userMessage}
 
 Provide helpful, specific financial advice based on their situation. Keep responses concise and actionable.`;
 
-                const response = await fetch('http://localhost:3000/api/analyze', {
+                const response = await fetch('http://localhost:3000/analyze', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        userText: contextPrompt
+                        text: contextPrompt
                     })
                 });
 
@@ -865,7 +865,8 @@ Provide helpful, specific financial advice based on their situation. Keep respon
                 }
 
                 const data = await response.json();
-                return data.analysis || data.message || 'Sorry, I could not generate a response.';
+                // Extract summary from the response
+                return data.summary || data.analysis || data.message || 'Sorry, I could not generate a response.';
             } catch (error) {
                 console.error('AI Error:', error);
                 return '⚠️ Sorry, I\'m having trouble connecting to the AI service. Please make sure the backend server is running on port 3000.';
