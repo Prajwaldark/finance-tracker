@@ -842,16 +842,18 @@ let debts = JSON.parse(localStorage.getItem('debts')) || [];
                     const loanIndex = loans.findIndex(l => l.id === id);
                     if (loanIndex !== -1) {
                         loans.splice(loanIndex, 1);
+                        localStorage.setItem('loans', JSON.stringify(loans));
                         showNotification('Loan deleted successfully!', 'success');
                     }
                 } else if (type === 'debt') {
                     const debtIndex = debts.findIndex(d => d.id === id);
                     if (debtIndex !== -1) {
                         debts.splice(debtIndex, 1);
+                        localStorage.setItem('debts', JSON.stringify(debts));
                         showNotification('Debt deleted successfully!', 'success');
                     }
                 }
-                
+
                 updateDashboard();
                 renderUpcomingPayments();
             }
@@ -862,7 +864,7 @@ let debts = JSON.parse(localStorage.getItem('debts')) || [];
             const annualRate = parseFloat(document.getElementById('interest-rate').value) || 0;
             const monthlyRate = annualRate / 12;
             const monthlyRateDisplay = document.getElementById('monthly-rate-display');
-            
+
             if (annualRate > 0) {
                 monthlyRateDisplay.textContent = `Monthly rate: ${monthlyRate.toFixed(2)}%`;
                 monthlyRateDisplay.className = 'text-xs text-blue-600 mt-1 font-medium';
@@ -871,6 +873,50 @@ let debts = JSON.parse(localStorage.getItem('debts')) || [];
                 monthlyRateDisplay.className = 'text-xs text-gray-500 mt-1';
             }
         }
+
+        // Listen for storage changes from other pages
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'loans' || e.key === 'debts') {
+                loans = JSON.parse(localStorage.getItem('loans')) || [];
+                debts = JSON.parse(localStorage.getItem('debts')) || [];
+                updateDashboard();
+                renderUpcomingPayments();
+            }
+        });
+
+        // Check for hash-based navigation
+        window.addEventListener('hashchange', handleHashNavigation);
+
+        function handleHashNavigation() {
+            const hash = window.location.hash;
+            if (hash === '#add-loan') {
+                loanModal.classList.remove('hidden');
+                window.location.hash = '';
+            } else if (hash === '#add-debt') {
+                debtModal.classList.remove('hidden');
+                window.location.hash = '';
+            }
+        }
+
+        // Check for query parameters (edit mode)
+        const urlParams = new URLSearchParams(window.location.search);
+        const editLoanId = urlParams.get('editLoan');
+        const editDebtId = urlParams.get('editDebt');
+
+        if (editLoanId) {
+            setTimeout(() => {
+                editPayment('loan', parseInt(editLoanId));
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }, 100);
+        } else if (editDebtId) {
+            setTimeout(() => {
+                editPayment('debt', parseInt(editDebtId));
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }, 100);
+        }
+
+        // Initial hash check
+        handleHashNavigation();
     </script>
 </body>
 </html>

@@ -2,49 +2,235 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Loans | Finance Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .card {
+            background: rgba(251, 251, 253, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 18px;
+        }
+        .loan-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .selected-card {
+            border: 2px solid #7c3aed;
+            background: rgba(124, 58, 237, 0.05);
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
-    <nav class="navbar w-full z-50 mb-8">
+    <nav class="bg-white shadow-sm w-full z-50 mb-8">
         <div class="max-w-6xl mx-auto px-5 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-6">
+                <i class="fas fa-wallet text-xl text-gray-900"></i>
                 <a href="index.html" class="text-lg font-semibold tracking-tight">FinanceTracker</a>
-                <a href="loans.html" class="font-medium text-purple-600">Loans</a>
-                <a href="debts.html" class="font-medium">Debts</a>
-                <a href="reports.html" class="font-medium">Reports</a>
+                <div class="flex space-x-6">
+                    <a href="index.html" class="font-medium hover:text-purple-600">Dashboard</a>
+                    <a href="loans.html" class="font-medium text-purple-600">Loans</a>
+                    <a href="debts.html" class="font-medium hover:text-purple-600">Debts</a>
+                    <a href="reports.html" class="font-medium hover:text-purple-600">Reports</a>
+                </div>
             </div>
         </div>
     </nav>
+
     <div class="container mx-auto px-4 py-6">
-        <h1 class="text-2xl font-bold mb-6">Loans I Owe</h1>
-        <div id="loans-list" class="bg-white rounded-lg shadow-md p-6">
-            <!-- Loans will be listed here by JS -->
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">
+                <i class="fas fa-hand-holding-usd text-purple-600 mr-2"></i>
+                Loans I Owe
+            </h1>
+            <div class="flex gap-3">
+                <button id="delete-selected" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition hidden items-center">
+                    <i class="fas fa-trash mr-2"></i>Delete Selected
+                </button>
+                <button id="add-loan-btn" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center">
+                    <i class="fas fa-plus mr-2"></i>Add Loan
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Card -->
+        <div class="card p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <p class="text-sm text-gray-500">Total Loans</p>
+                    <h2 class="text-2xl font-bold text-gray-800" id="total-loans">0</h2>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Amount Owed</p>
+                    <h2 class="text-2xl font-bold text-red-600" id="total-amount">₹0.00</h2>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Monthly EMI</p>
+                    <h2 class="text-2xl font-bold text-orange-600" id="total-emi">₹0.00</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loans List -->
+        <div id="loans-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Loans will be populated here -->
         </div>
     </div>
+
     <script>
-        // Load loans from localStorage
-        const loans = JSON.parse(localStorage.getItem('loans')) || [];
-        const loansList = document.getElementById('loans-list');
-        if (loans.length === 0) {
-            loansList.innerHTML = '<p class="text-gray-500">No loans found.</p>';
-        } else {
-            loansList.innerHTML = loans.map(loan => `
-                <div class="mb-4 border-b pb-4">
-                    <div class="flex justify-between">
-                        <div>
-                            <span class="font-semibold">${loan.lender}</span>
-                            <span class="ml-2 text-gray-500">₹${loan.principal}</span>
-                        </div>
-                        <span class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">${loan.status}</span>
+        let selectedLoans = new Set();
+
+        // Load and render loans
+        function loadLoans() {
+            const loans = JSON.parse(localStorage.getItem('loans')) || [];
+            const loansList = document.getElementById('loans-list');
+            const deleteBtn = document.getElementById('delete-selected');
+
+            // Update summary
+            document.getElementById('total-loans').textContent = loans.length;
+            document.getElementById('total-amount').textContent = `₹${loans.reduce((sum, l) => sum + l.principal, 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+            document.getElementById('total-emi').textContent = `₹${loans.reduce((sum, l) => sum + l.emi, 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+            if (loans.length === 0) {
+                loansList.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+                        <p class="text-gray-500 text-lg">No loans found</p>
+                        <button onclick="document.getElementById('add-loan-btn').click()" class="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                            Add Your First Loan
+                        </button>
                     </div>
-                    <div class="text-sm text-gray-600">Due: ${loan.dueDate}</div>
-                    <div class="text-sm text-gray-600">EMI: ₹${loan.emi} | Interest: ${loan.interestRate}%</div>
-                    <div class="text-xs text-gray-400">${loan.notes}</div>
+                `;
+                return;
+            }
+
+            loansList.innerHTML = loans.map(loan => `
+                <div class="card p-5 loan-card ${selectedLoans.has(loan.id) ? 'selected-card' : ''}" id="loan-${loan.id}">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center">
+                            <input type="checkbox"
+                                   id="select-${loan.id}"
+                                   ${selectedLoans.has(loan.id) ? 'checked' : ''}
+                                   onchange="toggleSelection(${loan.id})"
+                                   class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500 mr-3 cursor-pointer">
+                            <div>
+                                <h3 class="font-bold text-lg text-gray-800">${loan.lender}</h3>
+                                <span class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">${loan.status}</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editLoan(${loan.id})" class="text-purple-600 hover:text-purple-800" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteSingle(${loan.id})" class="text-red-600 hover:text-red-800" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Principal:</span>
+                            <span class="font-semibold text-gray-800">₹${loan.principal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Monthly EMI:</span>
+                            <span class="font-semibold text-orange-600">₹${loan.emi.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Interest Rate:</span>
+                            <span class="font-semibold">${loan.interestRate}% p.a.</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Tenure:</span>
+                            <span class="font-semibold">${loan.tenure} months</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Due Date:</span>
+                            <span class="font-semibold text-red-600">${new Date(loan.dueDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
+                        </div>
+                        ${loan.notes ? `<div class="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">${loan.notes}</div>` : ''}
+                    </div>
                 </div>
             `).join('');
+
+            // Show/hide delete button
+            deleteBtn.classList.toggle('hidden', selectedLoans.size === 0);
+            deleteBtn.classList.toggle('flex', selectedLoans.size > 0);
         }
+
+        function toggleSelection(id) {
+            if (selectedLoans.has(id)) {
+                selectedLoans.delete(id);
+            } else {
+                selectedLoans.add(id);
+            }
+            loadLoans();
+        }
+
+        function deleteSingle(id) {
+            if (confirm('Are you sure you want to delete this loan?')) {
+                let loans = JSON.parse(localStorage.getItem('loans')) || [];
+                loans = loans.filter(l => l.id !== id);
+                localStorage.setItem('loans', JSON.stringify(loans));
+                selectedLoans.delete(id);
+                loadLoans();
+                showNotification('Loan deleted successfully!', 'success');
+            }
+        }
+
+        function editLoan(id) {
+            // Redirect to main page with edit mode
+            window.location.href = `index.html?editLoan=${id}`;
+        }
+
+        document.getElementById('delete-selected').addEventListener('click', function() {
+            if (selectedLoans.size === 0) return;
+
+            if (confirm(`Are you sure you want to delete ${selectedLoans.size} loan(s)?`)) {
+                let loans = JSON.parse(localStorage.getItem('loans')) || [];
+                loans = loans.filter(l => !selectedLoans.has(l.id));
+                localStorage.setItem('loans', JSON.stringify(loans));
+                selectedLoans.clear();
+                loadLoans();
+                showNotification(`${selectedLoans.size} loan(s) deleted successfully!`, 'success');
+            }
+        });
+
+        document.getElementById('add-loan-btn').addEventListener('click', function() {
+            window.location.href = 'index.html#add-loan';
+        });
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} z-50`;
+            notification.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${message}`;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.3s';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Listen for storage changes from other tabs/pages
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'loans') {
+                loadLoans();
+            }
+        });
+
+        // Reload when page becomes visible
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                loadLoans();
+            }
+        });
+
+        // Initial load
+        loadLoans();
     </script>
 </body>
 </html>

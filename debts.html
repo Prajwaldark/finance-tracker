@@ -2,48 +2,219 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Debts | Finance Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .card {
+            background: rgba(251, 251, 253, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 18px;
+        }
+        .debt-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .selected-card {
+            border: 2px solid #10b981;
+            background: rgba(16, 185, 129, 0.05);
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
-    <nav class="navbar w-full z-50 mb-8">
+    <nav class="bg-white shadow-sm w-full z-50 mb-8">
         <div class="max-w-6xl mx-auto px-5 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-6">
+                <i class="fas fa-wallet text-xl text-gray-900"></i>
                 <a href="index.html" class="text-lg font-semibold tracking-tight">FinanceTracker</a>
-                <a href="loans.html" class="font-medium">Loans</a>
-                <a href="debts.html" class="font-medium text-purple-600">Debts</a>
-                <a href="reports.html" class="font-medium">Reports</a>
+                <div class="flex space-x-6">
+                    <a href="index.html" class="font-medium hover:text-purple-600">Dashboard</a>
+                    <a href="loans.html" class="font-medium hover:text-purple-600">Loans</a>
+                    <a href="debts.html" class="font-medium text-green-600">Debts</a>
+                    <a href="reports.html" class="font-medium hover:text-purple-600">Reports</a>
+                </div>
             </div>
         </div>
     </nav>
+
     <div class="container mx-auto px-4 py-6">
-        <h1 class="text-2xl font-bold mb-6">Money Owed to Me</h1>
-        <div id="debts-list" class="bg-white rounded-lg shadow-md p-6">
-            <!-- Debts will be listed here by JS -->
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">
+                <i class="fas fa-hand-holding-heart text-green-600 mr-2"></i>
+                Money Owed to Me
+            </h1>
+            <div class="flex gap-3">
+                <button id="delete-selected" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition hidden items-center">
+                    <i class="fas fa-trash mr-2"></i>Delete Selected
+                </button>
+                <button id="add-debt-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center">
+                    <i class="fas fa-plus mr-2"></i>Add Debt
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Card -->
+        <div class="card p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-500">Total Debts</p>
+                    <h2 class="text-2xl font-bold text-gray-800" id="total-debts">0</h2>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Amount Receivable</p>
+                    <h2 class="text-2xl font-bold text-green-600" id="total-amount">₹0.00</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debts List -->
+        <div id="debts-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Debts will be populated here -->
         </div>
     </div>
+
     <script>
-        // Load debts from localStorage
-        const debts = JSON.parse(localStorage.getItem('debts')) || [];
-        const debtsList = document.getElementById('debts-list');
-        if (debts.length === 0) {
-            debtsList.innerHTML = '<p class="text-gray-500">No debts found.</p>';
-        } else {
-            debtsList.innerHTML = debts.map(debt => `
-                <div class="mb-4 border-b pb-4">
-                    <div class="flex justify-between">
-                        <div>
-                            <span class="font-semibold">${debt.debtor}</span>
-                            <span class="ml-2 text-gray-500">₹${debt.amount}</span>
-                        </div>
-                        <span class="text-xs px-2 py-1 rounded bg-green-100 text-green-800">${debt.status}</span>
+        let selectedDebts = new Set();
+
+        // Load and render debts
+        function loadDebts() {
+            const debts = JSON.parse(localStorage.getItem('debts')) || [];
+            const debtsList = document.getElementById('debts-list');
+            const deleteBtn = document.getElementById('delete-selected');
+
+            // Update summary
+            document.getElementById('total-debts').textContent = debts.length;
+            document.getElementById('total-amount').textContent = `₹${debts.reduce((sum, d) => sum + d.amount, 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+            if (debts.length === 0) {
+                debtsList.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+                        <p class="text-gray-500 text-lg">No debts found</p>
+                        <button onclick="document.getElementById('add-debt-btn').click()" class="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            Add Your First Debt
+                        </button>
                     </div>
-                    <div class="text-sm text-gray-600">Due: ${debt.dueDate}</div>
-                    <div class="text-xs text-gray-400">${debt.notes}</div>
+                `;
+                return;
+            }
+
+            debtsList.innerHTML = debts.map(debt => `
+                <div class="card p-5 debt-card ${selectedDebts.has(debt.id) ? 'selected-card' : ''}" id="debt-${debt.id}">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center">
+                            <input type="checkbox"
+                                   id="select-${debt.id}"
+                                   ${selectedDebts.has(debt.id) ? 'checked' : ''}
+                                   onchange="toggleSelection(${debt.id})"
+                                   class="w-5 h-5 text-green-600 rounded focus:ring-green-500 mr-3 cursor-pointer">
+                            <div>
+                                <h3 class="font-bold text-lg text-gray-800">${debt.debtor}</h3>
+                                <span class="text-xs px-2 py-1 rounded bg-green-100 text-green-800">${debt.status}</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editDebt(${debt.id})" class="text-green-600 hover:text-green-800" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteSingle(${debt.id})" class="text-red-600 hover:text-red-800" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Amount:</span>
+                            <span class="font-semibold text-green-600">₹${debt.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Due Date:</span>
+                            <span class="font-semibold text-orange-600">${new Date(debt.dueDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
+                        </div>
+                        ${debt.notes ? `<div class="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">${debt.notes}</div>` : ''}
+                    </div>
                 </div>
             `).join('');
+
+            // Show/hide delete button
+            deleteBtn.classList.toggle('hidden', selectedDebts.size === 0);
+            deleteBtn.classList.toggle('flex', selectedDebts.size > 0);
         }
+
+        function toggleSelection(id) {
+            if (selectedDebts.has(id)) {
+                selectedDebts.delete(id);
+            } else {
+                selectedDebts.add(id);
+            }
+            loadDebts();
+        }
+
+        function deleteSingle(id) {
+            if (confirm('Are you sure you want to delete this debt?')) {
+                let debts = JSON.parse(localStorage.getItem('debts')) || [];
+                debts = debts.filter(d => d.id !== id);
+                localStorage.setItem('debts', JSON.stringify(debts));
+                selectedDebts.delete(id);
+                loadDebts();
+                showNotification('Debt deleted successfully!', 'success');
+            }
+        }
+
+        function editDebt(id) {
+            // Redirect to main page with edit mode
+            window.location.href = `index.html?editDebt=${id}`;
+        }
+
+        document.getElementById('delete-selected').addEventListener('click', function() {
+            if (selectedDebts.size === 0) return;
+
+            const count = selectedDebts.size;
+            if (confirm(`Are you sure you want to delete ${count} debt(s)?`)) {
+                let debts = JSON.parse(localStorage.getItem('debts')) || [];
+                debts = debts.filter(d => !selectedDebts.has(d.id));
+                localStorage.setItem('debts', JSON.stringify(debts));
+                selectedDebts.clear();
+                loadDebts();
+                showNotification(`${count} debt(s) deleted successfully!`, 'success');
+            }
+        });
+
+        document.getElementById('add-debt-btn').addEventListener('click', function() {
+            window.location.href = 'index.html#add-debt';
+        });
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} z-50`;
+            notification.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${message}`;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.3s';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Listen for storage changes from other tabs/pages
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'debts') {
+                loadDebts();
+            }
+        });
+
+        // Reload when page becomes visible
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                loadDebts();
+            }
+        });
+
+        // Initial load
+        loadDebts();
     </script>
 </body>
 </html>
