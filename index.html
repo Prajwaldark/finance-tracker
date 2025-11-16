@@ -354,11 +354,16 @@
     </div>
 
     <script>
+        console.log('=== SCRIPT STARTED ===');
+
         // Sample data
         let loans = JSON.parse(localStorage.getItem('loans')) || [];
         let debts = JSON.parse(localStorage.getItem('debts')) || [];
 
+        console.log('Initial data loaded - Loans:', loans.length, 'Debts:', debts.length);
+
         // DOM Elements
+        console.log('Getting DOM elements...');
         const themeToggle = document.getElementById('theme-toggle');
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileMenu = document.getElementById('mobile-menu');
@@ -380,46 +385,76 @@
         const loanCountEl = document.getElementById('loan-count');
         const debtCountEl = document.getElementById('debt-count');
 
+        console.log('DOM elements retrieved. Checking critical elements:');
+        console.log('totalOwedEl:', totalOwedEl);
+        console.log('totalReceivableEl:', totalReceivableEl);
+        console.log('netBalanceEl:', netBalanceEl);
+
         // Event Listeners
-        mobileMenuBtn.addEventListener('click', toggleMobileMenu);
-        authBtn.addEventListener('click', toggleAuth);
-        viewAllBtn.addEventListener('click', viewAllPayments);
-        generateStrategyBtn.addEventListener('click', generateStrategy);
-        addLoanBtn.addEventListener('click', () => loanModal.classList.remove('hidden'));
-        addDebtBtn.addEventListener('click', () => debtModal.classList.remove('hidden'));
-        exportDataBtn.addEventListener('click', () => exportModal.classList.remove('hidden'));
-        document.getElementById('close-loan-modal').addEventListener('click', () => loanModal.classList.add('hidden'));
-        document.getElementById('close-debt-modal').addEventListener('click', () => debtModal.classList.add('hidden'));
-        document.getElementById('close-export-modal').addEventListener('click', () => exportModal.classList.add('hidden'));
-        document.getElementById('cancel-loan').addEventListener('click', () => loanModal.classList.add('hidden'));
-        document.getElementById('cancel-debt').addEventListener('click', () => debtModal.classList.add('hidden'));
-        document.getElementById('cancel-export').addEventListener('click', () => exportModal.classList.add('hidden'));
-        document.getElementById('loan-form').addEventListener('submit', addNewLoan);
-        document.getElementById('debt-form').addEventListener('submit', addNewDebt);
-        document.getElementById('export-csv').addEventListener('click', exportToCSV);
-        document.getElementById('export-pdf').addEventListener('click', exportToPDF);
-        
-        // Add event listener for interest rate calculation
-        document.getElementById('interest-rate').addEventListener('input', calculateMonthlyRate);
+        console.log('Setting up event listeners...');
+        try {
+            mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+            authBtn.addEventListener('click', toggleAuth);
+            viewAllBtn.addEventListener('click', viewAllPayments);
+            generateStrategyBtn.addEventListener('click', generateStrategy);
+            addLoanBtn.addEventListener('click', () => loanModal.classList.remove('hidden'));
+            addDebtBtn.addEventListener('click', () => debtModal.classList.remove('hidden'));
+            exportDataBtn.addEventListener('click', () => exportModal.classList.remove('hidden'));
+            document.getElementById('close-loan-modal').addEventListener('click', () => loanModal.classList.add('hidden'));
+            document.getElementById('close-debt-modal').addEventListener('click', () => debtModal.classList.add('hidden'));
+            document.getElementById('close-export-modal').addEventListener('click', () => exportModal.classList.add('hidden'));
+            document.getElementById('cancel-loan').addEventListener('click', () => loanModal.classList.add('hidden'));
+            document.getElementById('cancel-debt').addEventListener('click', () => debtModal.classList.add('hidden'));
+            document.getElementById('cancel-export').addEventListener('click', () => exportModal.classList.add('hidden'));
+            document.getElementById('loan-form').addEventListener('submit', addNewLoan);
+            document.getElementById('debt-form').addEventListener('submit', addNewDebt);
+            document.getElementById('export-csv').addEventListener('click', exportToCSV);
+            document.getElementById('export-pdf').addEventListener('click', exportToPDF);
+
+            // Add event listener for interest rate calculation
+            document.getElementById('interest-rate').addEventListener('input', calculateMonthlyRate);
+            console.log('Event listeners set up successfully');
+        } catch (error) {
+            console.error('Error setting up event listeners:', error);
+        }
 
         // Initialize the app
-        document.addEventListener('DOMContentLoaded', function() {
+        console.log('Setting up initialization...');
+        console.log('Document ready state:', document.readyState);
+
+        function initializeApp() {
+            console.log('=== INITIALIZING APP ===');
+
             // Check for saved theme preference or use system preference
             const storedTheme = localStorage.getItem('color-theme');
             const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
+
+            console.log('Theme:', storedTheme, 'System dark:', systemDark);
+
             if (storedTheme === 'dark' || (!storedTheme && systemDark)) {
                 document.documentElement.classList.add('dark');
             } else if (storedTheme === 'light' || (!storedTheme && !systemDark)) {
                 document.documentElement.classList.remove('dark');
             }
-            
+
             updateThemeToggleIcon();
             updateThemeColors();
-            
+
+            console.log('About to call updateDashboard...');
             updateDashboard();
+            console.log('About to call renderUpcomingPayments...');
             renderUpcomingPayments();
-        });
+            console.log('=== INITIALIZATION COMPLETE ===');
+        }
+
+        // Check if DOM is already loaded (since script is at end of body)
+        if (document.readyState === 'loading') {
+            console.log('DOM still loading, adding event listener...');
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            console.log('DOM already loaded, initializing immediately...');
+            initializeApp();
+        }
 
         // Theme toggle handler
         themeToggle.addEventListener('click', function() {
