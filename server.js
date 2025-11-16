@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import cors from "cors";
+import OpenAI from "openai";
 dotenv.config();
 
 const app = express();
@@ -14,6 +15,17 @@ app.use(express.json({ limit: '10mb' })); // Add request size limit
 
 const MAX_STORED_RECORDS = 1000; // Prevent memory leak
 const userFinancialData = []; // Array to store analysis results
+
+// AI Provider Configuration
+const AI_PROVIDER = process.env.AI_PROVIDER || 'gemini'; // 'openai' or 'gemini'
+let openaiClient = null;
+
+// Initialize OpenAI client if OpenAI is configured
+if (process.env.OPENAI_API_KEY) {
+  openaiClient = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+  });
+}
 
 // Helper function to load saved data from disk
 function loadSavedData() {
@@ -39,6 +51,106 @@ function loadSavedData() {
   }
 }
 
+// Analyze financial data using OpenAI
+async function analyzeWithOpenAI(userText) {
+  if (!openaiClient) {
+    throw new Error("OpenAI client not initialized. Check OPENAI_API_KEY.");
+  }
+
+  const completion = await openaiClient.chat.completions.create({
+    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: "You are a financial analyst. Analyze financial information and extract total debt and total income. Respond ONLY with valid JSON in this exact format: {\"debt\": number, \"income\": number, \"summary\": string}"
+      },
+      {
+        role: "user",
+        content: `Analyze this financial information: ${userText}`
+      }
+    ],
+    temperature: 0.3,
+    response_format: { type: "json_object" }
+  });
+
+  const responseText = completion.choices[0].message.content;
+  const analysis = JSON.parse(responseText);
+
+  // Validate and normalize the response
+  if (typeof analysis.debt !== 'number') {
+    analysis.debt = parseFloat(analysis.debt) || 0;
+  }
+  if (typeof analysis.income !== 'number') {
+    analysis.income = parseFloat(analysis.income) || 0;
+  }
+  if (!analysis.summary) {
+    analysis.summary = "Financial analysis completed";
+  }
+
+  return analysis;
+}
+
+// Analyze financial data using Gemini
+async function analyzeWithGemini(userText) {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY not configured");
+  }
+
+  const prompt = `
+    Analyze the following financial information.
+    Extract the user's total debt and total income.
+    Respond in JSON format: { "debt": number, "income": number, "summary": string }.
+    Text: ${userText}
+  `;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+
+  if (data.error) {
+    throw new Error("Gemini API returned an error");
+  }
+
+  const geminiText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+  if (!geminiText) {
+    throw new Error("No response text from Gemini");
+  }
+
+  const jsonMatch = geminiText.match(/{[\s\S]*}/);
+  if (!jsonMatch) {
+    throw new Error("No JSON found in Gemini response");
+  }
+
+  const analysis = JSON.parse(jsonMatch[0]);
+
+  // Validate and normalize the response
+  if (typeof analysis.debt !== 'number') {
+    analysis.debt = parseFloat(analysis.debt) || 0;
+  }
+  if (typeof analysis.income !== 'number') {
+    analysis.income = parseFloat(analysis.income) || 0;
+  }
+  if (!analysis.summary) {
+    analysis.summary = "Financial analysis completed";
+  }
+
+  return analysis;
+}
+
 app.post("/analyze", async (req, res) => {
   try {
     // Input validation
@@ -57,81 +169,40 @@ app.post("/analyze", async (req, res) => {
       });
     }
 
-    // Check for API key
-    if (!process.env.GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY is not configured');
+    // Allow per-request provider override via query parameter
+    const provider = req.query.provider || AI_PROVIDER;
+
+    // Validate provider configuration
+    if (provider === 'openai' && !openaiClient) {
       return res.status(500).json({
-        error: "Server configuration error: API key not found"
+        error: "OpenAI is not configured. Please set OPENAI_API_KEY in environment variables."
       });
     }
 
-    // Enhanced prompt for Gemini to analyze debt and income
-    const prompt = `
-      Analyze the following financial information.
-      Extract the user's total debt and total income.
-      Respond in JSON format: { "debt": number, "income": number, "summary": string }.
-      Text: ${userText}
-    `;
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
-      }
-    );
-
-    // Validate fetch response
-    if (!response.ok) {
-      console.error(`Gemini API error: ${response.status} ${response.statusText}`);
-      return res.status(502).json({
-        error: `External API error: ${response.status}`
+    if (provider === 'gemini' && !process.env.GEMINI_API_KEY) {
+      return res.status(500).json({
+        error: "Gemini is not configured. Please set GEMINI_API_KEY in environment variables."
       });
     }
 
-    const data = await response.json();
-
-    // Check for API errors
-    if (data.error) {
-      console.error('Gemini API returned error:', data.error);
-      return res.status(502).json({
-        error: "Failed to analyze financial data"
-      });
-    }
-
-    // Try to extract the JSON from Gemini's response
+    // Analyze using selected provider
     let analysis = {};
     try {
-      const geminiText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-      if (!geminiText) {
-        throw new Error("No response text from Gemini");
-      }
-
-      const jsonMatch = geminiText.match(/{[\s\S]*}/);
-      if (!jsonMatch) {
-        throw new Error("No JSON found in Gemini response");
-      }
-
-      analysis = JSON.parse(jsonMatch[0]);
-
-      // Validate parsed analysis has required fields
-      if (typeof analysis.debt !== 'number' || typeof analysis.income !== 'number') {
-        // Try to convert strings to numbers if needed
-        if (analysis.debt !== undefined) analysis.debt = parseFloat(analysis.debt) || 0;
-        if (analysis.income !== undefined) analysis.income = parseFloat(analysis.income) || 0;
-      }
-
-      if (!analysis.summary) {
-        analysis.summary = "Financial analysis completed";
+      if (provider === 'openai') {
+        console.log('Analyzing with OpenAI...');
+        analysis = await analyzeWithOpenAI(userText);
+      } else if (provider === 'gemini') {
+        console.log('Analyzing with Gemini...');
+        analysis = await analyzeWithGemini(userText);
+      } else {
+        return res.status(400).json({
+          error: `Invalid AI provider: ${provider}. Use 'openai' or 'gemini'.`
+        });
       }
     } catch (e) {
-      console.error('Error parsing Gemini response:', e.message);
-      return res.status(500).json({
-        error: "Could not parse AI response. Please try again with clearer financial information."
+      console.error(`Error with ${provider} analysis:`, e.message);
+      return res.status(502).json({
+        error: `Failed to analyze with ${provider}. ${e.message}`
       });
     }
 
@@ -144,7 +215,8 @@ app.post("/analyze", async (req, res) => {
       timestamp: timestamp,
       debt: analysis.debt,
       income: analysis.income,
-      summary: analysis.summary
+      summary: analysis.summary,
+      provider: provider // Track which AI provider was used
     };
 
     // Save analysis to file
