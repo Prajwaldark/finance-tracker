@@ -51,43 +51,61 @@ function loadSavedData() {
   }
 }
 
-// Analyze financial data using OpenAI
+// Analyze financial data using OpenAI (using direct fetch for better compatibility)
 async function analyzeWithOpenAI(userText) {
-  if (!openaiClient) {
-    throw new Error("OpenAI client not initialized. Check OPENAI_API_KEY.");
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY not configured");
   }
 
-  const completion = await openaiClient.chat.completions.create({
-    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: "You are a financial analyst. Analyze financial information and extract total debt and total income. Respond ONLY with valid JSON in this exact format: {\"debt\": number, \"income\": number, \"summary\": string}"
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
       },
-      {
-        role: "user",
-        content: `Analyze this financial information: ${userText}`
-      }
-    ],
-    temperature: 0.3,
-    response_format: { type: "json_object" }
-  });
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are a financial analyst. Analyze financial information and extract total debt and total income. Respond ONLY with valid JSON in this exact format: {\"debt\": number, \"income\": number, \"summary\": string}"
+          },
+          {
+            role: "user",
+            content: `Analyze this financial information: ${userText}`
+          }
+        ],
+        temperature: 0.3,
+        response_format: { type: "json_object" }
+      })
+    });
 
-  const responseText = completion.choices[0].message.content;
-  const analysis = JSON.parse(responseText);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`OpenAI API error: ${response.status} - ${errorData.error?.message || response.statusText}`);
+    }
 
-  // Validate and normalize the response
-  if (typeof analysis.debt !== 'number') {
-    analysis.debt = parseFloat(analysis.debt) || 0;
-  }
-  if (typeof analysis.income !== 'number') {
-    analysis.income = parseFloat(analysis.income) || 0;
-  }
-  if (!analysis.summary) {
-    analysis.summary = "Financial analysis completed";
-  }
+    const data = await response.json();
+    const responseText = data.choices[0].message.content;
+    const analysis = JSON.parse(responseText);
 
-  return analysis;
+    // Validate and normalize the response
+    if (typeof analysis.debt !== 'number') {
+      analysis.debt = parseFloat(analysis.debt) || 0;
+    }
+    if (typeof analysis.income !== 'number') {
+      analysis.income = parseFloat(analysis.income) || 0;
+    }
+    if (!analysis.summary) {
+      analysis.summary = "Financial analysis completed";
+    }
+
+    return analysis;
+  } catch (error) {
+    console.error('OpenAI API Error Details:', error.message);
+    throw new Error(error.message || "OpenAI request failed");
+  }
 }
 
 // Analyze financial data using Gemini
