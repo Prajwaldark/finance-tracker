@@ -587,9 +587,21 @@
             console.log('Net Balance:', netBalance);
 
             // Update UI
-            totalOwedEl.textContent = `₹${totalOwed.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            totalReceivableEl.textContent = `₹${totalReceivable.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            netBalanceEl.textContent = `₹${Math.abs(netBalance).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            const owedText = `₹${totalOwed.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            const receivableText = `₹${totalReceivable.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            const netText = `₹${Math.abs(netBalance).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+            console.log('Setting totalOwedEl.textContent to:', owedText);
+            totalOwedEl.textContent = owedText;
+            console.log('totalOwedEl.textContent is now:', totalOwedEl.textContent);
+
+            console.log('Setting totalReceivableEl.textContent to:', receivableText);
+            totalReceivableEl.textContent = receivableText;
+            console.log('totalReceivableEl.textContent is now:', totalReceivableEl.textContent);
+
+            console.log('Setting netBalanceEl.textContent to:', netText);
+            netBalanceEl.textContent = netText;
+            console.log('netBalanceEl.textContent is now:', netBalanceEl.textContent);
 
             if (netBalance > 0) {
                 netStatusEl.textContent = 'You are net positive';
@@ -607,7 +619,11 @@
 
             // Update bank balance display
             const bankBalance = parseFloat(localStorage.getItem('bankBalance')) || 0;
-            document.getElementById('bank-balance').textContent = `₹${bankBalance.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+            const bankBalanceEl = document.getElementById('bank-balance');
+            const bankText = `₹${bankBalance.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+            console.log('Setting bank balance to:', bankText);
+            bankBalanceEl.textContent = bankText;
+            console.log('Bank balance element textContent is now:', bankBalanceEl.textContent);
         }
 
         function updateBankBalance() {
