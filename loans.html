@@ -7,10 +7,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        body {
+            transition: background-color 0.3s, color 0.3s;
+        }
         .card {
             background: rgba(251, 251, 253, 0.8);
             border: 1px solid rgba(0, 0, 0, 0.08);
             border-radius: 18px;
+            transition: all 0.3s;
+        }
+        .dark .card {
+            background: rgba(31, 41, 55, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .loan-card:hover {
             transform: translateY(-2px);
@@ -21,27 +29,34 @@
             border: 2px solid #7c3aed;
             background: rgba(124, 58, 237, 0.05);
         }
+        .dark .selected-card {
+            background: rgba(124, 58, 237, 0.2);
+        }
     </style>
 </head>
-<body class="bg-gray-50">
-    <nav class="bg-white shadow-sm w-full z-50 mb-8">
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors">
+    <nav class="bg-white dark:bg-gray-800 shadow-sm w-full z-50 mb-8 transition-colors">
         <div class="max-w-6xl mx-auto px-5 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-6">
-                <i class="fas fa-wallet text-xl text-gray-900"></i>
-                <a href="index.html" class="text-lg font-semibold tracking-tight">FinanceTracker</a>
+                <i class="fas fa-wallet text-xl text-gray-900 dark:text-gray-100"></i>
+                <a href="index.html" class="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">FinanceTracker</a>
                 <div class="flex space-x-6">
-                    <a href="index.html" class="font-medium hover:text-purple-600">Dashboard</a>
+                    <a href="index.html" class="font-medium hover:text-purple-600 text-gray-700 dark:text-gray-300">Dashboard</a>
                     <a href="loans.html" class="font-medium text-purple-600">Loans</a>
-                    <a href="debts.html" class="font-medium hover:text-purple-600">Debts</a>
-                    <a href="reports.html" class="font-medium hover:text-purple-600">Reports</a>
+                    <a href="debts.html" class="font-medium hover:text-purple-600 text-gray-700 dark:text-gray-300">Debts</a>
+                    <a href="reports.html" class="font-medium hover:text-purple-600 text-gray-700 dark:text-gray-300">Reports</a>
                 </div>
             </div>
+            <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                <i class="fas fa-moon dark:hidden"></i>
+                <i class="fas fa-sun hidden dark:block"></i>
+            </button>
         </div>
     </nav>
 
     <div class="container mx-auto px-4 py-6">
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">
                 <i class="fas fa-hand-holding-usd text-purple-600 mr-2"></i>
                 Loans I Owe
             </h1>
@@ -59,16 +74,16 @@
         <div class="card p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <p class="text-sm text-gray-500">Total Loans</p>
-                    <h2 class="text-2xl font-bold text-gray-800" id="total-loans">0</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Loans</p>
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="total-loans">0</h2>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-500">Total Amount Owed</p>
-                    <h2 class="text-2xl font-bold text-red-600" id="total-amount">₹0.00</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Amount Owed</p>
+                    <h2 class="text-2xl font-bold text-red-600 dark:text-red-400" id="total-amount">₹0.00</h2>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-500">Monthly EMI</p>
-                    <h2 class="text-2xl font-bold text-orange-600" id="total-emi">₹0.00</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Monthly EMI</p>
+                    <h2 class="text-2xl font-bold text-orange-600 dark:text-orange-400" id="total-emi">₹0.00</h2>
                 </div>
             </div>
         </div>
@@ -116,41 +131,45 @@
                                    onchange="toggleSelection(${loan.id})"
                                    class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500 mr-3 cursor-pointer">
                             <div>
-                                <h3 class="font-bold text-lg text-gray-800">${loan.lender}</h3>
-                                <span class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">${loan.status}</span>
+                                <h3 class="font-bold text-lg text-gray-800 dark:text-gray-100">${loan.lender}</h3>
+                                <span class="text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">${loan.status}</span>
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="editLoan(${loan.id})" class="text-purple-600 hover:text-purple-800" title="Edit">
+                            <button onclick="editLoan(${loan.id})" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button onclick="deleteSingle(${loan.id})" class="text-red-600 hover:text-red-800" title="Delete">
+                            <button onclick="deleteSingle(${loan.id})" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300" title="Delete">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
                     </div>
                     <div class="space-y-2 text-sm">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Principal:</span>
-                            <span class="font-semibold text-gray-800">₹${loan.principal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+                            <span class="text-gray-600 dark:text-gray-400">Principal:</span>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200">₹${loan.principal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Monthly EMI:</span>
-                            <span class="font-semibold text-orange-600">₹${loan.emi.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+                            <span class="text-gray-600 dark:text-gray-400">Monthly EMI:</span>
+                            <span class="font-semibold text-orange-600 dark:text-orange-400">₹${loan.emi.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Interest Rate:</span>
-                            <span class="font-semibold">${loan.interestRate}% p.a.</span>
+                            <span class="text-gray-600 dark:text-gray-400">Interest Rate:</span>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200">${loan.interestRate}% p.a.</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Tenure:</span>
-                            <span class="font-semibold">${loan.tenure} months</span>
+                            <span class="text-gray-600 dark:text-gray-400">Tenure:</span>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200">${loan.tenure} months</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Due Date:</span>
-                            <span class="font-semibold text-red-600">${new Date(loan.dueDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
+                            <span class="text-gray-600 dark:text-gray-400">Due Date:</span>
+                            <span class="font-semibold text-red-600 dark:text-red-400">${new Date(loan.dueDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
                         </div>
-                        ${loan.notes ? `<div class="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">${loan.notes}</div>` : ''}
+                        ${loan.fromDate ? `<div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Start Date:</span>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200">${new Date(loan.fromDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
+                        </div>` : ''}
+                        ${loan.notes ? `<div class="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded text-xs text-gray-600 dark:text-gray-300">${loan.notes}</div>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -231,6 +250,22 @@
 
         // Initial load
         loadLoans();
+
+        // Dark mode functionality
+        const themeToggle = document.getElementById('theme-toggle');
+
+        // Check for saved theme preference
+        const storedTheme = localStorage.getItem('color-theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (storedTheme === 'dark' || (!storedTheme && systemDark)) {
+            document.documentElement.classList.add('dark');
+        }
+
+        themeToggle.addEventListener('click', function() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('color-theme', isDark ? 'dark' : 'light');
+        });
     </script>
 </body>
 </html>

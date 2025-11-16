@@ -83,13 +83,27 @@
     <!-- Main Content -->
     <div class="container mx-auto px-4 py-6">
         <!-- Dashboard Summary -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-16">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-16">
+            <!-- Bank Balance -->
+            <div class="card p-6 cursor-pointer hover:shadow-lg transition" onclick="updateBankBalance()">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-gray-500">Bank Balance</p>
+                        <h2 class="text-3xl font-semibold text-blue-600" id="bank-balance">₹0.00</h2>
+                    </div>
+                    <i class="fas fa-university text-blue-500 text-xl"></i>
+                </div>
+                <div class="mt-4">
+                    <p class="text-xs text-blue-500">Click to update</p>
+                </div>
+            </div>
+
             <!-- Total I Owe -->
             <div class="card p-6">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-sm text-gray-500">Total I Owe</p>
-                        <h2 class="text-3xl font-semibold" id="total-owed">₹0.00</h2>
+                        <h2 class="text-3xl font-semibold text-red-600" id="total-owed">₹0.00</h2>
                     </div>
                     <i class="fas fa-hand-holding-usd text-gray-500 text-xl"></i>
                 </div>
@@ -103,7 +117,7 @@
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-sm text-gray-500">Total Owed to Me</p>
-                        <h2 class="text-3xl font-semibold" id="total-receivable">₹0.00</h2>
+                        <h2 class="text-3xl font-semibold text-green-600" id="total-receivable">₹0.00</h2>
                     </div>
                     <i class="fas fa-hand-holding-heart text-gray-500 text-xl"></i>
                 </div>
@@ -222,9 +236,13 @@
                                 <input type="number" id="loan-tenure" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
                             </div>
                             <div>
-                                <label class="block text-gray-700 mb-2" for="loan-due-date">Due Date</label>
-                                <input type="date" id="loan-due-date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                                <label class="block text-gray-700 mb-2" for="loan-from-date">Start Date</label>
+                                <input type="date" id="loan-from-date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
                             </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2" for="loan-due-date">Next EMI Due Date</label>
+                            <input type="date" id="loan-due-date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
                         </div>
                         <div class="mb-4">
                             <label class="block text-gray-700 mb-2" for="interest-rate">Interest Rate (% per annum)</label>
@@ -306,6 +324,30 @@
                     <div class="flex justify-end">
                         <button type="button" id="cancel-export" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank Balance Modal -->
+        <div id="bank-balance-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md slide-in">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">Update Bank Balance</h3>
+                        <button id="close-bank-modal" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <form id="bank-balance-form">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2" for="bank-balance-input">Current Balance (₹)</label>
+                            <input type="number" id="bank-balance-input" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required step="0.01">
+                        </div>
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" id="cancel-bank-balance" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Balance</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -499,12 +541,12 @@ let debts = JSON.parse(localStorage.getItem('debts')) || [];
             const totalOwed = loans.reduce((sum, loan) => sum + loan.principal, 0);
             const totalReceivable = debts.reduce((sum, debt) => sum + debt.amount, 0);
             const netBalance = totalReceivable - totalOwed;
-            
+
             // Update UI
             totalOwedEl.textContent = `₹${totalOwed.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             totalReceivableEl.textContent = `₹${totalReceivable.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             netBalanceEl.textContent = `₹${Math.abs(netBalance).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            
+
             if (netBalance > 0) {
                 netStatusEl.textContent = 'You are net positive';
                 netStatusEl.className = 'text-sm text-green-500';
@@ -515,10 +557,39 @@ let debts = JSON.parse(localStorage.getItem('debts')) || [];
                 netStatusEl.textContent = 'Balanced';
                 netStatusEl.className = 'text-sm text-gray-500';
             }
-            
+
             loanCountEl.textContent = loans.length;
             debtCountEl.textContent = debts.length;
+
+            // Update bank balance display
+            const bankBalance = parseFloat(localStorage.getItem('bankBalance')) || 0;
+            document.getElementById('bank-balance').textContent = `₹${bankBalance.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
         }
+
+        function updateBankBalance() {
+            const bankBalanceModal = document.getElementById('bank-balance-modal');
+            const currentBalance = parseFloat(localStorage.getItem('bankBalance')) || 0;
+            document.getElementById('bank-balance-input').value = currentBalance;
+            bankBalanceModal.classList.remove('hidden');
+        }
+
+        // Bank balance modal handlers
+        document.getElementById('close-bank-modal')?.addEventListener('click', () => {
+            document.getElementById('bank-balance-modal').classList.add('hidden');
+        });
+
+        document.getElementById('cancel-bank-balance')?.addEventListener('click', () => {
+            document.getElementById('bank-balance-modal').classList.add('hidden');
+        });
+
+        document.getElementById('bank-balance-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const balance = parseFloat(document.getElementById('bank-balance-input').value);
+            localStorage.setItem('bankBalance', balance);
+            document.getElementById('bank-balance-modal').classList.add('hidden');
+            updateDashboard();
+            showNotification('Bank balance updated successfully!', 'success');
+        });
 
         function renderUpcomingPayments() {
             // Combine loans and debts and sort by due date
@@ -665,6 +736,7 @@ let debts = JSON.parse(localStorage.getItem('debts')) || [];
                 interestRate: Number(interestRate),
                 emi,
                 tenure,
+                fromDate: document.getElementById('loan-from-date').value,
                 dueDate: document.getElementById('loan-due-date').value,
                 notes: document.getElementById('loan-notes').value,
                 status: "active"
@@ -737,6 +809,7 @@ let debts = JSON.parse(localStorage.getItem('debts')) || [];
                     document.getElementById('interest-rate').value = loan.interestRate;
                     document.getElementById('loan-emi').value = loan.emi;
                     document.getElementById('loan-tenure').value = loan.tenure;
+                    document.getElementById('loan-from-date').value = loan.fromDate || '';
                     document.getElementById('loan-due-date').value = loan.dueDate;
                     document.getElementById('loan-notes').value = loan.notes;
 
@@ -783,6 +856,7 @@ let debts = JSON.parse(localStorage.getItem('debts')) || [];
                     interestRate: parseFloat(document.getElementById('interest-rate').value),
                     emi: parseFloat(document.getElementById('loan-emi').value),
                     tenure: parseFloat(document.getElementById('loan-tenure').value),
+                    fromDate: document.getElementById('loan-from-date').value,
                     dueDate: document.getElementById('loan-due-date').value,
                     notes: document.getElementById('loan-notes').value,
                     status: 'active'
