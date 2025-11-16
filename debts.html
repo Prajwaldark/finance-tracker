@@ -70,7 +70,31 @@
             </div>
         </div>
 
-        <!-- Summary Card -->
+        <!-- Financial Summary Card -->
+        <div class="card p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">Financial Summary</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Bank Balance</p>
+                    <h2 class="text-2xl font-bold text-blue-600 dark:text-blue-400" id="summary-bank-balance">₹0.00</h2>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total I Owe</p>
+                    <h2 class="text-2xl font-bold text-red-600 dark:text-red-400" id="summary-total-owed">₹0.00</h2>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Owed to Me</p>
+                    <h2 class="text-2xl font-bold text-green-600 dark:text-green-400" id="summary-total-receivable">₹0.00</h2>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Net Balance</p>
+                    <h2 class="text-2xl font-bold" id="summary-net-balance">₹0.00</h2>
+                    <p class="text-xs mt-1" id="summary-net-status">Balanced</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debts Summary -->
         <div class="card p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -91,7 +115,55 @@
     </div>
 
     <script>
+        console.log('=== DEBTS PAGE SCRIPT STARTED ===');
         let selectedDebts = new Set();
+
+        // Update financial summary
+        function updateFinancialSummary() {
+            console.log('Updating financial summary...');
+
+            // Load data from localStorage
+            const loans = JSON.parse(localStorage.getItem('loans')) || [];
+            const debts = JSON.parse(localStorage.getItem('debts')) || [];
+            const bankBalance = parseFloat(localStorage.getItem('bankBalance')) || 0;
+
+            console.log('Loaded - Loans:', loans.length, 'Debts:', debts.length, 'Bank:', bankBalance);
+
+            // Calculate totals
+            const totalOwed = loans.reduce((sum, loan) => sum + loan.principal, 0);
+            const totalReceivable = debts.reduce((sum, debt) => sum + debt.amount, 0);
+            const netBalance = totalReceivable - totalOwed;
+
+            console.log('Calculated - Owed:', totalOwed, 'Receivable:', totalReceivable, 'Net:', netBalance);
+
+            // Update UI
+            document.getElementById('summary-bank-balance').textContent =
+                `₹${bankBalance.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+            document.getElementById('summary-total-owed').textContent =
+                `₹${totalOwed.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+            document.getElementById('summary-total-receivable').textContent =
+                `₹${totalReceivable.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+            document.getElementById('summary-net-balance').textContent =
+                `₹${Math.abs(netBalance).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+            // Update net status
+            const netStatusEl = document.getElementById('summary-net-status');
+            if (netBalance > 0) {
+                netStatusEl.textContent = 'You are net positive';
+                netStatusEl.className = 'text-xs mt-1 text-green-600 dark:text-green-400';
+            } else if (netBalance < 0) {
+                netStatusEl.textContent = 'You are net negative';
+                netStatusEl.className = 'text-xs mt-1 text-red-600 dark:text-red-400';
+            } else {
+                netStatusEl.textContent = 'Balanced';
+                netStatusEl.className = 'text-xs mt-1 text-gray-500 dark:text-gray-400';
+            }
+
+            console.log('Financial summary updated successfully');
+        }
 
         // Load and render debts
         function loadDebts() {
@@ -99,7 +171,9 @@
             const debtsList = document.getElementById('debts-list');
             const deleteBtn = document.getElementById('delete-selected');
 
-            // Update summary
+            // Update both summaries
+            updateFinancialSummary();
+
             document.getElementById('total-debts').textContent = debts.length;
             document.getElementById('total-amount').textContent = `₹${debts.reduce((sum, d) => sum + d.amount, 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
 
