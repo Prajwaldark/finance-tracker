@@ -577,14 +577,18 @@
             console.log('Loans:', loans.length, loans);
             console.log('Debts:', debts.length, debts);
 
+            // Get bank balance
+            const bankBalance = parseFloat(localStorage.getItem('bankBalance')) || 0;
+            console.log('Bank Balance:', bankBalance);
+
             // Calculate totals
             const totalOwed = loans.reduce((sum, loan) => sum + loan.principal, 0);
             const totalReceivable = debts.reduce((sum, debt) => sum + debt.amount, 0);
-            const netBalance = totalReceivable - totalOwed;
+            const netBalance = bankBalance + totalReceivable - totalOwed;
 
             console.log('Total Owed:', totalOwed);
             console.log('Total Receivable:', totalReceivable);
-            console.log('Net Balance:', netBalance);
+            console.log('Net Balance (with bank):', netBalance);
 
             // Update UI
             const owedText = `₹${totalOwed.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
@@ -618,9 +622,8 @@
             debtCountEl.textContent = debts.length;
 
             // Update bank balance display
-            const bankBalance = parseFloat(localStorage.getItem('bankBalance')) || 0;
             const bankBalanceEl = document.getElementById('bank-balance');
-            const bankText = `₹${bankBalance.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+            const bankText = `₹${bankBalance.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             console.log('Setting bank balance to:', bankText);
             bankBalanceEl.textContent = bankText;
             console.log('Bank balance element textContent is now:', bankBalanceEl.textContent);
@@ -717,37 +720,52 @@
             // Simulate AI API call
             generateStrategyBtn.disabled = true;
             generateStrategyBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
-            
+
             setTimeout(() => {
+                // Get financial data
+                const bankBalance = parseFloat(localStorage.getItem('bankBalance')) || 0;
+                const totalOwed = loans.reduce((sum, loan) => sum + loan.principal, 0);
+                const totalReceivable = debts.reduce((sum, debt) => sum + debt.amount, 0);
+                const netBalance = bankBalance + totalReceivable - totalOwed;
+
                 // Sort loans by interest rate (highest first)
                 const sortedLoans = [...loans].sort((a, b) => b.interestRate - a.interestRate);
-                
+
                 // Calculate total monthly payments
                 const totalMonthlyPayments = loans.reduce((sum, loan) => sum + loan.emi, 0);
-                
+
                 // Calculate total monthly income from debts (assuming they pay monthly)
                 // In a real app, this would be more sophisticated
                 const totalMonthlyIncome = debts.reduce((sum, debt) => sum + (debt.amount / 12), 0);
-                
+
                 let strategyHTML = `
                     <div class="space-y-4">
+                        <div class="p-4 bg-indigo-50 rounded-lg">
+                            <h4 class="font-bold text-indigo-800 mb-2">Financial Overview</h4>
+                            <p>Bank Balance: <span class="font-semibold text-blue-600">₹${bankBalance.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></p>
+                            <p>Total You Owe: <span class="font-semibold text-red-600">₹${totalOwed.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></p>
+                            <p>Total Owed to You: <span class="font-semibold text-green-600">₹${totalReceivable.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></p>
+                            <p class="mt-2 pt-2 border-t border-indigo-200">Net Position: <span class="font-bold ${netBalance >= 0 ? 'text-green-600' : 'text-red-600'}">₹${Math.abs(netBalance).toLocaleString('en-IN', {minimumFractionDigits: 2})}</span> ${netBalance >= 0 ? '(Positive)' : '(Negative)'}</p>
+                        </div>
+
                         <div class="p-4 bg-purple-50 rounded-lg">
                             <h4 class="font-bold text-purple-800 mb-2">Repayment Priority</h4>
                             <ol class="list-decimal list-inside space-y-1">
-                                ${sortedLoans.map(loan => 
-                                    `<li>Pay <span class="font-semibold">${loan.lender}</span> (${loan.interestRate}% per annum) - Next payment: ₹${loan.emi} due ${formatDate(loan.dueDate)}</li>`
+                                ${sortedLoans.map(loan =>
+                                    `<li>Pay <span class="font-semibold">${loan.lender}</span> ${loan.interestRate ? `(${loan.interestRate}% per annum)` : ''} - Next payment: ₹${loan.emi.toLocaleString('en-IN')} due ${formatDate(loan.dueDate)}</li>`
                                 ).join('')}
                             </ol>
                         </div>
-                        
+
                         <div class="p-4 bg-blue-50 rounded-lg">
                             <h4 class="font-bold text-blue-800 mb-2">Cash Flow Analysis</h4>
-                            <p>Your total monthly debt payments: <span class="font-semibold">₹${totalMonthlyPayments.toFixed(2)}</span></p>
-                            <p>Estimated monthly income from receivables: <span class="font-semibold">₹${totalMonthlyIncome.toFixed(2)}</span></p>
-                            <p class="mt-2 ${totalMonthlyIncome > totalMonthlyPayments ? 'text-green-600' : 'text-red-600'}">
-                                ${totalMonthlyIncome > totalMonthlyPayments ? 
-                                    'You have positive cash flow. Consider paying extra on high-interest loans.' : 
-                                    'Warning: Your monthly debt payments exceed expected income. Consider adjusting your budget.'}
+                            <p>Current Bank Balance: <span class="font-semibold">₹${bankBalance.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></p>
+                            <p>Total Monthly EMI Payments: <span class="font-semibold">₹${totalMonthlyPayments.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></p>
+                            <p>Estimated Monthly Receivables: <span class="font-semibold">₹${totalMonthlyIncome.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></p>
+                            <p class="mt-2 ${bankBalance >= totalMonthlyPayments ? 'text-green-600' : 'text-orange-600'}">
+                                ${bankBalance >= totalMonthlyPayments ?
+                                    `Good! You have sufficient bank balance to cover ${Math.floor(bankBalance / totalMonthlyPayments)} month(s) of EMI payments.` :
+                                    'Consider collecting receivables or adjusting spending to maintain adequate cash reserves.'}
                             </p>
                         </div>
                         

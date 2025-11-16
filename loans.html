@@ -136,9 +136,9 @@
             // Calculate totals
             const totalOwed = loans.reduce((sum, loan) => sum + loan.principal, 0);
             const totalReceivable = debts.reduce((sum, debt) => sum + debt.amount, 0);
-            const netBalance = totalReceivable - totalOwed;
+            const netBalance = bankBalance + totalReceivable - totalOwed;
 
-            console.log('Calculated - Owed:', totalOwed, 'Receivable:', totalReceivable, 'Net:', netBalance);
+            console.log('Calculated - Bank:', bankBalance, 'Owed:', totalOwed, 'Receivable:', totalReceivable, 'Net:', netBalance);
 
             // Update UI
             document.getElementById('summary-bank-balance').textContent =
