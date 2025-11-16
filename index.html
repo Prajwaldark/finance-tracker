@@ -356,7 +356,7 @@
     <script>
         // Sample data
         let loans = JSON.parse(localStorage.getItem('loans')) || [];
-let debts = JSON.parse(localStorage.getItem('debts')) || [];
+        let debts = JSON.parse(localStorage.getItem('debts')) || [];
 
         // DOM Elements
         const themeToggle = document.getElementById('theme-toggle');
@@ -537,10 +537,19 @@ let debts = JSON.parse(localStorage.getItem('debts')) || [];
         }
 
         function updateDashboard() {
+            // Debug logging
+            console.log('updateDashboard called');
+            console.log('Loans:', loans.length, loans);
+            console.log('Debts:', debts.length, debts);
+
             // Calculate totals
             const totalOwed = loans.reduce((sum, loan) => sum + loan.principal, 0);
             const totalReceivable = debts.reduce((sum, debt) => sum + debt.amount, 0);
             const netBalance = totalReceivable - totalOwed;
+
+            console.log('Total Owed:', totalOwed);
+            console.log('Total Receivable:', totalReceivable);
+            console.log('Net Balance:', netBalance);
 
             // Update UI
             totalOwedEl.textContent = `₹${totalOwed.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
